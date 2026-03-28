@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { RegulationsClient } from "./regulations-client";
 
+export const dynamic = 'force-dynamic';
+
 async function getData() {
   const regulations = await prisma.regulation.findMany({
     include: {

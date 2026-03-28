@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { ComplianceCenterClient } from "./compliance-center-client";
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: { slug: string };
 }

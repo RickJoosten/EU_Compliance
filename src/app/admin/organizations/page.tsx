@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { OrganizationsClient } from "./organizations-client";
 
+export const dynamic = 'force-dynamic';
+
 async function getData() {
   const organizations = await prisma.organization.findMany({
     include: {

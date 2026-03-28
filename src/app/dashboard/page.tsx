@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+
+export const dynamic = 'force-dynamic';
 import { ComplianceScoreCircle } from "@/components/shared/compliance-score-circle";
 import { StoplichtIndicator } from "@/components/shared/stoplicht-indicator";
 import { StatusBadge } from "@/components/shared/status-badge";

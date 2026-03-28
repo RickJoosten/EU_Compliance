@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { UsersClient } from "./users-client";
 
+export const dynamic = 'force-dynamic';
+
 async function getData() {
   const users = await prisma.user.findMany({
     select: {

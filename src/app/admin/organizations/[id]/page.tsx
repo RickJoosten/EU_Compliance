@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { OrganizationDetailClient } from "./organization-detail-client";
+
+export const dynamic = 'force-dynamic';
 import { decrypt, maskSecret } from "@/lib/crypto";
 
 async function getData(id: string) {
