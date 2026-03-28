@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  emailVerified   DateTime?
+  password        String        @default("")
+  name            String
+  image           String?
+  role            String        @default("CLIENT_USER") // ADMIN | CLIENT_ADMIN | CLIENT_USER
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  assignedActions ActionItem[]
+  accounts        Account[]
+  sessions        Session[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Organization {
+  id                     String                   @id @default(cuid())
+  name                   String
+  slug                   String                   @unique
+  sector                 String                   @default("OVERIG") // GEMEENTE | OVERHEID | ONDERWIJS | ZORG | FINANCIEEL | OVERIG
+  logo                   String?
+  primaryColor           String?
+  employeeCount          Int?
+  autoProvisionSSO       Boolean                  @default(true)
+  complianceCenterEnabled Boolean                 @default(false)
+  googleClientId         String                   @default("")
+  googleClientSecret     String                   @default("") // encrypted
+  azureAdClientId        String                   @default("")
+  azureAdClientSecret    String                   @default("") // encrypted
+  azureAdTenantId        String                   @default("")
+  users                  User[]
+  domains                OrganizationDomain[]
+  organizationRegulations OrganizationRegulation[]
+  complianceStatuses     ComplianceStatus[]
+  dashboardData          DashboardData[]
+  actionItems            ActionItem[]
+  complianceDocuments    ComplianceDocument[]
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+}
+
+model OrganizationDomain {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  domain         String       @unique
+  verified       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+}
+
+model Regulation {
+  id                      String                   @id @default(cuid())
+  name                    String
+  slug                    String                   @unique
+  description             String
+  authority               String
+  effectiveDate           DateTime
+  officialReference       String?
+  transpositionDate       DateTime?
+  scope                   String?
+  applicableSectors       String?                  // JSON array: ["GEMEENTE","OVERHEID","FINANCIEEL",...]
+  sourceUrl               String?
+  penaltyInfo             String?
+  category                String                   @default("OVERIG") // GENDER | BELONING | DIVERSITEIT | ESG | OVERIG
+  isActive                Boolean                  @default(true)
+  requirementCategories   RequirementCategory[]
+  organizationRegulations OrganizationRegulation[]
+  actionTemplates         ActionTemplate[]
+  actionItems             ActionItem[]
+  complianceDocuments     ComplianceDocument[]
+  createdAt               DateTime                 @default(now())
+}
+
+model RequirementCategory {
+  id           String        @id @default(cuid())
+  regulationId String
+  regulation   Regulation    @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  name         String
+  description  String
+  sortOrder    Int           @default(0)
+  requirements Requirement[]
+}
+
+model Requirement {
+  id                String              @id @default(cuid())
+  categoryId        String
+  category          RequirementCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title             String
+  description       String
+  guidance          String?
+  evidenceType      String              @default("DOCUMENT") // DOCUMENT | DATA_ANALYSIS | POLICY | TRAINING | REPORT
+  priority          String              @default("MEDIUM") // HIGH | MEDIUM | LOW
+  sortOrder         Int                 @default(0)
+  complianceStatuses ComplianceStatus[]
+  actionItems       ActionItem[]
+}
+
+model OrganizationRegulation {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  regulationId   String
+  regulation     Regulation   @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  isActive       Boolean      @default(true)
+  startDate      DateTime     @default(now())
+
+  @@unique([organizationId, regulationId])
+}
+
+model ComplianceStatus {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requirementId  String
+  requirement    Requirement  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  status         String       @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | UNDER_REVIEW | COMPLIANT | NON_COMPLIANT
+  notes          String?
+  evidence       String?      // JSON string
+  completedAt    DateTime?
+  reviewedBy     String?
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, requirementId])
+}
+
+model DashboardData {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category       String
+  year           Int
+  data           String       // JSON string
+  importedAt     DateTime     @default(now())
+  importedBy     String?
+}
+
+model ActionItem {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  regulationId   String?
+  regulation     Regulation?  @relation(fields: [regulationId], references: [id])
+  requirementId  String?
+  requirement    Requirement? @relation(fields: [requirementId], references: [id])
+  parentId       String?
+  parent         ActionItem?  @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  children       ActionItem[] @relation("Subtasks")
+  assignedToId   String?
+  assignedTo     User?        @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  title          String
+  description    String       @default("")
+  dueDate        DateTime?
+  status         String       @default("TODO") // TODO | IN_PROGRESS | DONE
+  priority       String       @default("MEDIUM") // HIGH | MEDIUM | LOW
+  sortOrder      Int          @default(0)
+  isFromTemplate Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+
+model ActionTemplate {
+  id                   String           @id @default(cuid())
+  regulationId         String
+  regulation           Regulation       @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+  parentId             String?
+  parent               ActionTemplate?  @relation("TemplateSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  children             ActionTemplate[] @relation("TemplateSubtasks")
+  title                String
+  description          String           @default("")
+  priority             String           @default("MEDIUM") // HIGH | MEDIUM | LOW
+  sortOrder            Int              @default(0)
+  relativeDeadlineDays Int              @default(30)
+}
+
+model ComplianceDocument {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  regulationId   String?
+  regulation     Regulation?   @relation(fields: [regulationId], references: [id], onDelete: SetNull)
+  title          String
+  description    String        @default("")
+  url            String
+  type           String        @default("LINK") // LINK | POLICY | REPORT | CERTIFICATE | OTHER
+  isPublic       Boolean       @default(true)
+  sortOrder      Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
