@@ -10,7 +10,9 @@ import { decrypt } from "@/lib/crypto";
 // Base auth options used by getServerSession throughout the app.
 // SSO providers are added dynamically per request in the route handler.
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
+  // Note: PrismaAdapter removed to fix credentials login with JWT strategy.
+  // The adapter conflicts with CredentialsProvider in NextAuth v4.
+  // SSO account linking is handled manually in the signIn callback.
   providers: [
     CredentialsProvider({
       name: "credentials",
