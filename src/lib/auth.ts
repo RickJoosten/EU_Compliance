@@ -21,27 +21,41 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Wachtwoord", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        console.log("[AUTH] authorize called with email:", credentials?.email);
+        if (!credentials?.email || !credentials?.password) {
+          console.log("[AUTH] Missing email or password");
+          return null;
+        }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: { organization: true },
-        });
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            include: { organization: true },
+          });
 
-        if (!user || !user.password) return null;
+          console.log("[AUTH] User found:", !!user, "Has password:", !!user?.password);
 
-        const isValid = await bcryptjs.compare(credentials.password, user.password);
-        if (!isValid) return null;
+          if (!user || !user.password) return null;
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          organizationId: user.organizationId,
-          organizationName: user.organization?.name,
-          organizationSlug: user.organization?.slug,
-        };
+          const isValid = await bcryptjs.compare(credentials.password, user.password);
+          console.log("[AUTH] Password valid:", isValid);
+          if (!isValid) return null;
+
+          const result = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            organizationId: user.organizationId,
+            organizationName: user.organization?.name,
+            organizationSlug: user.organization?.slug,
+          };
+          console.log("[AUTH] Returning user:", result.email, result.role);
+          return result;
+        } catch (error) {
+          console.error("[AUTH] Error in authorize:", error);
+          return null;
+        }
       },
     }),
   ],
