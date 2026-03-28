@@ -21,43 +21,27 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Wachtwoord", type: "password" },
       },
       async authorize(credentials) {
-        console.log("[AUTH] authorize called with email:", credentials?.email);
-        console.log("[AUTH] DATABASE_URL:", process.env.DATABASE_URL?.substring(0, 30));
-        if (!credentials?.email || !credentials?.password) {
-          console.log("[AUTH] Missing email or password");
-          return null;
-        }
+        if (!credentials?.email || !credentials?.password) return null;
 
-        try {
-          console.log("[AUTH] About to query user...");
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
-            include: { organization: true },
-          });
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+          include: { organization: true },
+        });
 
-          console.log("[AUTH] Query complete. User found:", !!user, "Has password:", !!user?.password);
+        if (!user || !user.password) return null;
 
-          if (!user || !user.password) return null;
+        const isValid = await bcryptjs.compare(credentials.password, user.password);
+        if (!isValid) return null;
 
-          const isValid = await bcryptjs.compare(credentials.password, user.password);
-          console.log("[AUTH] Password valid:", isValid);
-          if (!isValid) return null;
-
-          const result = {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-            organizationId: user.organizationId,
-            organizationName: user.organization?.name,
-            organizationSlug: user.organization?.slug,
-          };
-          console.log("[AUTH] Returning user:", result.email, result.role);
-          return result;
-        } catch (error) {
-          console.error("[AUTH] Error in authorize:", error);
-          return null;
-        }
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          organizationId: user.organizationId,
+          organizationName: user.organization?.name,
+          organizationSlug: user.organization?.slug,
+        };
       },
     }),
   ],
