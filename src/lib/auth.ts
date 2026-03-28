@@ -29,12 +29,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          console.log("[AUTH] About to query user...");
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
             include: { organization: true },
           });
 
-          console.log("[AUTH] User found:", !!user, "Has password:", !!user?.password);
+          console.log("[AUTH] Query complete. User found:", !!user, "Has password:", !!user?.password);
 
           if (!user || !user.password) return null;
 
