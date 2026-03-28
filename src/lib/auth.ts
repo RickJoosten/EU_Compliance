@@ -22,6 +22,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         console.log("[AUTH] authorize called with email:", credentials?.email);
+        console.log("[AUTH] DATABASE_URL:", process.env.DATABASE_URL?.substring(0, 30));
         if (!credentials?.email || !credentials?.password) {
           console.log("[AUTH] Missing email or password");
           return null;
