@@ -1,0 +1,16 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "openssl"]
+cmds = ["npm install -g bun"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = [
+    "bunx prisma generate",
+    "bunx prisma db push --skip-generate",
+    "NODE_OPTIONS='--max-old-space-size=384' bun run build"
+]
+
+[start]
+cmd = "bun run start"
